@@ -100,7 +100,7 @@ class tv_mail_ru():
         config_file = open(self.__get_config_path(args.config_file), "w")
 
         parser.add_section('general')
-        parser.set('general', 'conf_ver', '2')
+        parser.set('general', 'conf_ver', '3')
 
         parser.add_section('account')
 
@@ -139,6 +139,8 @@ class tv_mail_ru():
         parser.set('settings', 'force_quiet', '0')
         if query_yes_no('Always enable quiet argument? Need for TVHeadend 4.0', 'no') == 'yes':
             parser.set('settings', 'force_quiet', '1')
+
+        parser.add_section('replaces')
 
         parser.write(config_file)
         sys.exit(0)
@@ -652,11 +654,13 @@ class tv_mail_ru():
 
                     log('date = %s, chanel_id = %4s, name = %s' % (cur_date, channel['id'], channel['name']), self.conf['force_quiet'])
 
+                    channel_name = self.conf['replace_names'].get(channel['id'], channel['name'])
+
                     channel_id = channel_prefix + channel['id']
 
                     channel_info = self.data.get(channel_id)
                     if not channel_info:
-                        channel_data = {'display-name': [(channel['name'], 'ru')],
+                        channel_data = {'display-name': [(channel_name, 'ru')],
                                         'id': channel_id,
                                         'url': [self.base_url + channel['url']],
                                         'region_id': region_id,
@@ -859,6 +863,13 @@ class tv_mail_ru():
             conf['force_quiet'] = parser.getboolean('settings', 'force_quiet')
         else:
             conf['force_quiet'] = False
+
+        if conf_ver >= 3:
+            conf['replace_names'] = {}
+            name_items = parser.items('replaces')
+            for id, name in name_items:
+                log('id: %s, name: %s' % (id, name))
+                conf['replace_names'][id] = name
 
         return conf
 
