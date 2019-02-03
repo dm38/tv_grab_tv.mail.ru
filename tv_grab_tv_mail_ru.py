@@ -245,6 +245,8 @@ class tv_mail_ru():
             result = 'Historical movie'
         elif genre in [u'эротика']:
             result = 'Adult movie'
+        elif genre in [u'для взрослых']:
+            result = 'Adult movie'
 
         #02 News / Current affairs
         elif genre in [u'новостное']:
@@ -433,8 +435,8 @@ class tv_mail_ru():
             # result = 'Factual topics'
         # elif genre in [u'']:
             # result = 'Nature'
-        # elif genre in [u'']:
-            # result = 'Animals'
+        elif genre in [u'шоу о животных и природе']:
+            result = 'Animals / Nature'
         # elif genre in [u'']:
             # result = 'Environment'
         # elif genre in [u'']:
@@ -497,6 +499,7 @@ class tv_mail_ru():
         return prefix
 
     def __get_url_data( self, url, params='' ):
+        log('URL: %s%s' % (url, params))
         count = 0
         max_count = 5
         read_delay = 0.5
@@ -514,7 +517,7 @@ class tv_mail_ru():
         self.s = requests.Session()
 
         self.s.headers.update({'Host': 'tv.mail.ru',
-                          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:53.0) Gecko/20100101 Firefox/53.0',
+                          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:64.0) Gecko/20100101 Firefox/64.0',
                           'Connection': 'keep-alive',
                           })
 
@@ -528,7 +531,7 @@ class tv_mail_ru():
                 'saveauth':      '0',
                 }
         headers = {'Host': 'auth.mail.ru',
-                   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:61.0) Gecko/20100101 Firefox/61.0',
+                   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:64.0) Gecko/20100101 Firefox/64.0',
                    }
         r = self.s.post(url, data = data, headers=headers)
 
@@ -590,7 +593,7 @@ class tv_mail_ru():
 
     def __load_program( self, region_id ):
         url = 'https://tv.mail.ru/ajax/index/'
-        params = 'appearance=list&channel_type=favorite&period=all'
+        params = 'appearance=list&channel_type=all&period=all'
 
         region_info = '&region_id=%s' % region_id
 
@@ -623,7 +626,7 @@ class tv_mail_ru():
                     read_channels = False
 
                 for value in j['form']['channel_type']['values']:
-                    if (value['value'] == 'favorite') and (value['count'] < 1):
+                    if (value['value'] == 'all') and (value['count'] < 1):
                         read_channels = False
                         read_dates = False
                         break
@@ -655,6 +658,9 @@ class tv_mail_ru():
                     if not channel['id'] in ex_channels:
                         ex_channels.append(channel['id'])
 
+                    if not channel['id'] in self.conf['fav_list']:
+                        continue
+
                     log('date = %s, chanel_id = %4s, name = %s' % (cur_date, channel['id'], channel['name']), self.conf['force_quiet'])
 
                     channel_name = self.conf['replace_names'].get(channel['id'], channel['name'])
@@ -678,6 +684,7 @@ class tv_mail_ru():
                     events  = schedule['event']
 
                     if not events:
+                        log('fail')
                         continue
 
                     prev_time = datetime.strptime(cur_date, '%Y-%m-%d')
@@ -886,10 +893,20 @@ class tv_mail_ru():
                 log('id: %s, name: %s' % (id, name))
                 conf['replace_names'][id] = name
 
+        conf['fav_list'] = []
+        conf['fav_list'] = parser.get('settings', 'fav_list').splitlines()
+        log('%s' % (parser.get('settings', 'fav_list').splitlines()))
+
         return conf
 
     def __remove_html( self, text ):
         result = text
+
+        result = result.replace(u'&amp;',       u'&')
+        result = result.replace(u'&amp;',       u'&')
+        result = result.replace(u'&amp;',       u'&')
+        result = result.replace(u'&amp;',       u'&')
+
         result = result.replace(u'&nbsp;',      u' ')
         result = result.replace(u'&pound;',     u'£')
         result = result.replace(u'&euro;',      u'€')
@@ -965,7 +982,6 @@ class tv_mail_ru():
         result = result.replace(u'&hearts;',    u'♥')
         result = result.replace(u'&diams;',     u'♦')
         result = result.replace(u'&quot;',      u'"')
-        result = result.replace(u'&amp;',       u'&')
         result = result.replace(u'&lt;',        u'<')
         result = result.replace(u'&gt;',        u'>')
         result = result.replace(u'&hellip;',    u'…')
@@ -981,6 +997,8 @@ class tv_mail_ru():
         result = result.replace(u'&bdquo;',     u'„')
         result = result.replace(u'&laquo;',     u'«')
         result = result.replace(u'&raquo;',     u'»')
+
+        result = result.replace(u'&ccedil;',    u'ç')
 
         result = result.replace(u'<br>',    u'\n')
 
