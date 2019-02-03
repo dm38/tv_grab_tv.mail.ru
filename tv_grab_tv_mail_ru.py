@@ -617,6 +617,9 @@ class tv_mail_ru():
 
                 j = r.json()
 
+                if not j['pager']['next']['url']:
+                    read_channels = False
+
                 for value in j['form']['channel_type']['values']:
                     if (value['value'] == 'favorite') and (value['count'] < 1):
                         read_channels = False
@@ -667,9 +670,6 @@ class tv_mail_ru():
                         channel_info = {'data': channel_data,
                                         'events': []
                                         }
-
-                    if not j['pager']['next']['url']:
-                        read_channels = False
 
                     events  = schedule['event']
 
